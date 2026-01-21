@@ -171,6 +171,27 @@ def delete_book(id):
     db.session.commit()
     return redirect(url_for('librarian_dashboard'))
 
+@app.route('/delete_comment/<int:interaction_id>', methods=['POST'])
+@login_required
+def delete_comment(interaction_id):
+    # 1. Security Check: Only librarians can delete
+    if current_user.role != 'librarian':
+        flash("Unauthorized: Only librarians can delete comments.", "danger")
+        return redirect(url_for('reader_dashboard'))
+
+    # 2. Find and Delete the comment
+    comment_to_delete = ReaderInteraction.query.get_or_404(interaction_id)
+    
+    try:
+        db.session.delete(comment_to_delete)
+        db.session.commit()
+        flash("Comment successfully removed.", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash("Error deleting comment. Please try again.", "danger")
+
+    return redirect(url_for('librarian_dashboard'))
+
 @app.route('/reader', methods=['GET', 'POST'])
 @login_required
 @role_required('reader')
