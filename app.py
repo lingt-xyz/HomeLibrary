@@ -68,7 +68,7 @@ def role_required(role):
         @wraps(f)
         def decorated_function(*args, **kwargs):
             if not current_user.is_authenticated or current_user.role != role:
-                flash("You do not have permission to access this page.")
+                flash("You do not have permission to access this page.", "warning")
                 return redirect(url_for('login'))
             return f(*args, **kwargs)
         return decorated_function
@@ -93,7 +93,7 @@ def login():
             if user.role == 'admin': return redirect(url_for('admin_dashboard'))
             if user.role == 'librarian': return redirect(url_for('librarian_dashboard'))
             return redirect(url_for('reader_dashboard'))
-        flash('Invalid username or password')
+        flash('Invalid username or password', 'danger')
     return render_template('login.html')
 
 @app.route('/logout')
@@ -115,12 +115,12 @@ def admin_dashboard():
         role = request.form.get('role')
         # Prevent duplicate usernames
         if User.query.filter_by(username=username).first():
-            flash("Username already exists!")
+            flash("Username already exists!", "danger")
         else:
             new_user = User(username=username, password=hashed_password, role=role)
             db.session.add(new_user)
             db.session.commit()
-            flash(f"User {username} created as {role}!")
+            flash(f"User {username} created as {role}!", "success")
     # Fetch all users to display them in the list
     all_users = User.query.all() 
     return render_template('admin.html', users=all_users)
@@ -133,12 +133,12 @@ def delete_user(user_id):
     
     # Security check: Prevent admin from deleting their own account
     if user_to_delete.id == current_user.id:
-        flash("You cannot delete your own admin account!")
+        flash("You cannot delete your own admin account!", "danger")
         return redirect(url_for('admin_dashboard'))
     
     db.session.delete(user_to_delete)
     db.session.commit()
-    flash(f"User {user_to_delete.username} has been deleted.")
+    flash(f"User {user_to_delete.username} has been deleted.", "success")
     return redirect(url_for('admin_dashboard'))
 
 @app.route('/librarian', methods=['GET', 'POST'])
@@ -152,7 +152,7 @@ def librarian_dashboard():
         new_book = Book(title=title, author=author)
         db.session.add(new_book)
         db.session.commit()
-        flash("New book added to library.")
+        flash("New book added to library.", "success")
 
     # Data for the page
     books = Book.query.all()
@@ -186,7 +186,7 @@ def reader_dashboard():
         author = raw_author.title()
 
         if not title or not author:
-            flash("Error: Book title and author cannot be empty.")
+            flash("Error: Book title and author cannot be empty.", "danger")
             return redirect(url_for('reader_dashboard'))
 
         # Validation Check: Case-insensitive search for Title AND Author
@@ -196,14 +196,14 @@ def reader_dashboard():
         ).first()
 
         if existing_book:
-            # If the book exists, send a warning and don't save
-            flash(f"Error: '{title}' by {author} already exists in the library.")
+            # If the book exists, send an error and don't save
+            flash(f"Error: '{title}' by {author} already exists in the library.", "danger")
         else:
             # If the book is new, save it
             new_book = Book(title=title, author=author)
             db.session.add(new_book)
             db.session.commit()
-            flash(f"Successfully added '{title}' to the library.")
+            flash(f"Successfully added '{title}' to the library.", "success")
         
         # Always redirect to prevent form resubmission on page refresh
         return redirect(url_for('reader_dashboard'))
@@ -248,9 +248,9 @@ def add_comment(book_id):
 
     new_count = ReaderInteraction.query.filter_by(user_id=current_user.id).count()
     if new_count == 1:
-        flash("Congratulations! You've started your reading journey! 🌟")
+        flash("Congratulations! You've started your reading journey! 🌟", "success")
     elif new_count == 5:
-        flash("Level Up! You are now an 'Active Reader'! 📚")
+        flash("Level Up! You are now an 'Active Reader'! 📚", "success")
         
     # 1. Search for an existing interaction for this user and this book
     existing_interaction = ReaderInteraction.query.filter_by(
@@ -262,7 +262,7 @@ def add_comment(book_id):
         # 2. UPDATE: If it exists, change the comment and time
         existing_interaction.comment = comment
         existing_interaction.timestamp = datetime.now()
-        flash("Your review for this book has been updated.")
+        flash("Your review for this book has been updated.", "success")
     else:
         # 3. CREATE: If it doesn't exist, make a new record
         new_interaction = ReaderInteraction(
@@ -271,7 +271,7 @@ def add_comment(book_id):
             comment=comment
         )
         db.session.add(new_interaction)
-        flash("Review submitted successfully!")
+        flash("Review submitted successfully!", "success")
 
     db.session.commit()
     return redirect(url_for('reader_dashboard'))
@@ -286,7 +286,7 @@ def profile():
         # Check if the new username is already taken by someone else
         existing_user = User.query.filter_by(username=new_username).first()
         if existing_user and existing_user.id != current_user.id:
-            flash("Error: That username is already taken.")
+            flash("Error: That username is already taken.", "danger")
             return redirect(url_for('profile'))
 
         # Update Username
@@ -298,7 +298,7 @@ def profile():
             current_user.password = generate_password_hash(new_password)
             
         db.session.commit()
-        flash("Profile updated successfully!")
+        flash("Profile updated successfully!", "success")
         return redirect(url_for('profile'))
         
     return render_template('profile.html')
