@@ -210,12 +210,17 @@ def reader_dashboard():
     pagination = query.paginate(page=page, per_page=per_page)
     # Total count for the user
     total_results = pagination.total
-    history = ReaderInteraction.query.filter_by(user_id=current_user.id).all()
-    
-    return render_template('reader.html', 
+
+    interactions = ReaderInteraction.query.filter_by(user_id=current_user.id).all()
+    user_comments = {i.book_id: i.comment for i in interactions}
+    history = ReaderInteraction.query.filter_by(user_id=current_user.id).order_by(ReaderInteraction.timestamp.desc()).all()
+    stats = get_reader_stats(current_user.id)
+    return render_template('reader.html',
+                           stats=stats, 
                            pagination=pagination, 
                            total_results=total_results, 
-                           history=history, 
+                           history=history,
+                           user_comments=user_comments,
                            search_query=search_query)
 
 @app.route('/reader/comment/<int:book_id>', methods=['POST'])
@@ -223,7 +228,12 @@ def reader_dashboard():
 @role_required('reader')
 def add_comment(book_id):
     comment = request.form.get('comment', '').strip()
-    
+    new_count = ReaderInteraction.query.filter_by(user_id=current_user.id).count()
+    if new_count == 1:
+        flash("Congratulations! You've started your reading journey! 🌟")
+    elif new_count == 5:
+        flash("Level Up! You are now an 'Active Reader'! 📚")
+        
     # 1. Search for an existing interaction for this user and this book
     existing_interaction = ReaderInteraction.query.filter_by(
         user_id=current_user.id, 
@@ -247,24 +257,6 @@ def add_comment(book_id):
 
     db.session.commit()
     return redirect(url_for('reader_dashboard'))
-
-@app.route('/favorite/<int:book_id>')
-@login_required
-@role_required('reader')
-def toggle_favorite(book_id):
-    # Check if this book is already favorited by the user
-    fav = Favorite.query.filter_by(user_id=current_user.id, book_id=book_id).first()
-    
-    if fav:
-        db.session.delete(fav)
-        flash("Removed from favorites.")
-    else:
-        new_fav = Favorite(user_id=current_user.id, book_id=book_id)
-        db.session.add(new_fav)
-        flash("Added to favorites!")
-        
-    db.session.commit()
-    return redirect(request.referrer or url_for('reader_dashboard'))
 
 @app.route('/profile', methods=['GET', 'POST'])
 @login_required
@@ -292,6 +284,43 @@ def profile():
         return redirect(url_for('profile'))
         
     return render_template('profile.html')
+
+def get_reader_stats(user_id):
+    # Count how many unique books the user has reviewed
+    total_read = ReaderInteraction.query.filter_by(user_id=user_id).count()
+    
+    # Determine Rank
+    if total_read >= 100:
+        rank, color, next_m = "Library Legend", "text-dark", 200
+    elif total_read >= 50:
+        rank, color, next_m = "Grand Librarian", "text-info", 100
+    elif total_read >= 20:
+        rank = "Master Scholar"
+        color = "text-danger"
+        next_milestone = 50
+    elif total_read >= 10:
+        rank = "Bookworm"
+        color = "text-success"
+        next_milestone = 20
+    elif total_read >= 5:
+        rank = "Active Reader"
+        color = "text-primary"
+        next_milestone = 10
+    else:
+        rank = "Novice"
+        color = "text-secondary"
+        next_milestone = 5
+        
+    # Calculate progress percentage toward the next milestone
+    progress = (total_read / next_milestone) * 100
+    
+    return {
+        "count": total_read,
+        "rank": rank,
+        "color": color,
+        "progress": min(progress, 100),
+        "next": next_milestone
+    }
 
 # --- Initialization ---
 
