@@ -228,6 +228,11 @@ def reader_dashboard():
 @role_required('reader')
 def add_comment(book_id):
     comment = request.form.get('comment', '').strip()
+
+    if not comment:
+        flash("You must write a comment to mark this book as read!", "warning")
+        return redirect(url_for('reader_dashboard'))
+
     new_count = ReaderInteraction.query.filter_by(user_id=current_user.id).count()
     if new_count == 1:
         flash("Congratulations! You've started your reading journey! 🌟")

@@ -122,7 +122,8 @@
                                                     class="form-control form-control-sm" 
                                                     rows="2" 
                                                     maxlength="100" 
-                                                    placeholder="What did you think?">{{ user_comments.get(book.id, '') }}</textarea>
+                                                    placeholder="What did you think?"
+                                                    required>{{ user_comments.get(book.id, '') }}</textarea>
                                         </div>
                                         <div class="col-3">
                                             <button type="submit" class="btn btn-sm {{ 'btn-info' if book.id in user_comments else 'btn-primary' }} w-100">
