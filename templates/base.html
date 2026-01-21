@@ -25,6 +25,14 @@
             background-color: #ffc107 !important; /* Gold color */
             border: 1px solid #fff;
         }
+
+        .alert-milestone {
+            background: linear-gradient(45deg, #ffd700, #ff8c00);
+            color: #000;
+            font-weight: bold;
+            border: none;
+            box-shadow: 0 4px 15px rgba(255, 215, 0, 0.5);
+        }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script>
@@ -32,15 +40,36 @@
             const alerts = document.querySelectorAll('.alert');
             
             alerts.forEach(function(alert) {
-                // Check if this is a success message
+                // 1. Regular Success Pop
                 if (alert.classList.contains('alert-success')) {
-                    // FIRE THE CONFETTI!
-                    confetti({
-                        particleCount: 150,
-                        spread: 70,
-                        origin: { y: 0.6 },
-                        colors: ['#228B22', '#ffd700', '#ffffff'] // Green, Gold, White
-                    });
+                    confetti({ particleCount: 200, spread: 70, origin: { y: 0.6 } });
+                }
+
+                // 2. MASTER SCHOLAR MILESTONE (The Big One)
+                if (alert.classList.contains('alert-milestone')) {
+                    const duration = 3 * 1000;
+                    const end = Date.now() + duration;
+
+                    (function frame() {
+                        confetti({
+                            particleCount: 5,
+                            angle: 60,
+                            spread: 55,
+                            origin: { x: 0 },
+                            colors: ['#ffd700', '#ff0000'] // Gold and Red
+                        });
+                        confetti({
+                            particleCount: 5,
+                            angle: 120,
+                            spread: 55,
+                            origin: { x: 1 },
+                            colors: ['#ffd700', '#ff0000']
+                        });
+
+                        if (Date.now() < end) {
+                            requestAnimationFrame(frame);
+                        }
+                    }());
                 }
 
                 // Auto-fade after 5 seconds

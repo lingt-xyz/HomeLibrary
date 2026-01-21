@@ -245,12 +245,6 @@ def add_comment(book_id):
     if not comment:
         flash("You must write a comment to mark this book as read!", "warning")
         return redirect(url_for('reader_dashboard'))
-
-    new_count = ReaderInteraction.query.filter_by(user_id=current_user.id).count()
-    if new_count == 1:
-        flash("Congratulations! You've started your reading journey! 🌟", "success")
-    elif new_count == 5:
-        flash("Level Up! You are now an 'Active Reader'! 📚", "success")
         
     # 1. Search for an existing interaction for this user and this book
     existing_interaction = ReaderInteraction.query.filter_by(
@@ -271,7 +265,16 @@ def add_comment(book_id):
             comment=comment
         )
         db.session.add(new_interaction)
-        flash("Review submitted successfully!", "success")
+
+        new_count = ReaderInteraction.query.filter_by(user_id=current_user.id).count()
+        if new_count == 1:
+            flash("Congratulations! You've started your reading journey! 🌟", "success")
+        elif new_count == 5:
+            flash("Level Up! You are now an 'Active Reader'! 📚", "success")
+        elif new_count == 20:
+            flash("UNLOCKED: Master Scholar Rank! 🏆", "milestone")
+        else:
+            flash("Review submitted successfully!", "success")
 
     db.session.commit()
     return redirect(url_for('reader_dashboard'))
