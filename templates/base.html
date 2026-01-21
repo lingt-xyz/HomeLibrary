@@ -26,6 +26,31 @@
             border: 1px solid #fff;
         }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const alerts = document.querySelectorAll('.alert');
+            
+            alerts.forEach(function(alert) {
+                // Check if this is a success message
+                if (alert.classList.contains('alert-success')) {
+                    // FIRE THE CONFETTI!
+                    confetti({
+                        particleCount: 150,
+                        spread: 70,
+                        origin: { y: 0.6 },
+                        colors: ['#228B22', '#ffd700', '#ffffff'] // Green, Gold, White
+                    });
+                }
+
+                // Auto-fade after 5 seconds
+                setTimeout(function() {
+                    alert.classList.remove('show');
+                    setTimeout(() => alert.remove(), 150);
+                }, 5000);
+            });
+        });
+    </script>
 </head>
 <body>
 
@@ -100,15 +125,17 @@
 
     <div class="container">
         {% with messages = get_flashed_messages(with_categories=true) %}
-          {% if messages %}
-            {% for category, message in messages %}
-              <div class="alert alert-{{ category }} alert-dismissible fade show shadow-sm" role="alert">
-                <i class="bi {{ 'bi-exclamation-triangle-fill' if category == 'danger' or category == 'warning' else 'bi-check-circle-fill' }} me-2"></i>
-                {{ message }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-              </div>
-            {% endfor %}
-          {% endif %}
+            {% if messages %}
+                <div class="flash-container position-fixed top-0 start-50 translate-middle-x mt-3" style="z-index: 1050; min-width: 300px;">
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show shadow-lg border-0 d-flex align-items-center" role="alert">
+                    <i class="bi {{ 'bi-exclamation-triangle-fill' if category in ['danger', 'warning'] else 'bi-check-circle-fill' }} me-2"></i>
+                    <div class="small fw-bold">{{ message }}</div>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+                </div>
+            {% endif %}
         {% endwith %}
     </div>
 
