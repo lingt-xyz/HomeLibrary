@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-5">
+            <div class="card shadow-sm mb-4 border-0">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">Add New Book</h5>
+                </div>
+                <div class="card-body">
+                    <form action="{{ url_for('bookkeeper_dashboard') }}" method="POST">
+                        <div class="mb-3">
+                            <label class="form-label">Title</label>
+                            <input type="text" name="title" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Author</label>
+                            <input type="text" name="author" class="form-control" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Add to System</button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0">Current Inventory</h5>
+                </div>
+                <div class="table-responsive" style="max-height: 400px;">
+                    <table class="table table-sm table-hover align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>Book Title</th>
+                                <th class="text-end">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for book in books %}
+                            <tr>
+                                <td>
+                                    <div class="fw-bold">{{ book.title }}</div>
+                                    <div class="small text-muted">{{ book.author }}</div>
+                                </td>
+                                <td class="text-end">
+                                    <a href="{{ url_for('delete_book', id=book.id) }}" 
+                                       class="btn btn-sm btn-outline-danger"
+                                       onclick="return confirm('Delete this book?')">Delete</a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-7">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Reader Activity Log</h5>
+                    <span class="badge bg-light text-dark">{{ interactions|length }} Total Reads</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive" style="max-height: 750px;">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Reader</th>
+                                    <th>Book Read</th>
+                                    <th>Date & Time</th> <th>Reader's Comment</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for entry in interactions %}
+                                <tr>
+                                    <td>
+                                        <span class="badge bg-secondary">{{ entry.user.username }}</span>
+                                    </td>
+                                    <td>
+                                        <div class="fw-bold">{{ entry.book.title }}</div>
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">{{ entry.timestamp.strftime('%b %d, %Y - %H:%M') }}</small>
+                                    </td>
+                                    <td style="max-width: 300px;">
+                                        <div class="text-wrap small text-muted">
+                                            "{{ entry.comment }}"
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

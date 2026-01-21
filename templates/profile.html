@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">Your Profile</h4>
+            </div>
+            <div class="card-body p-4">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Username</label>
+                        <input type="text" name="username" class="form-control" 
+                               value="{{ current_user.username }}" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Change Password</label>
+                        <input type="password" name="password" class="form-control" 
+                               placeholder="Leave blank to keep current password">
+                        <div class="form-text">For security, use at least 8 characters.</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Account Role</label>
+                        <input type="text" class="form-control bg-light" 
+                               value="{{ current_user.role|capitalize }}" readonly>
+                        <div class="form-text text-danger">Only an Admin can change your role.</div>
+                    </div>
+
+                    <div class="d-grid gap-2 mt-4">
+                        <button type="submit" class="btn btn-primary">Update Profile</button>
+                        <a href="
+                            {% if current_user.role == 'admin' %}{{ url_for('admin_dashboard') }}
+                            {% elif current_user.role == 'bookkeeper' %}{{ url_for('bookkeeper_dashboard') }}
+                            {% else %}{{ url_for('reader_dashboard') }}{% endif %}
+                        " class="btn btn-outline-secondary">Back to Dashboard</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
