@@ -7,14 +7,27 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 from dotenv import load_dotenv
 
-app = Flask(__name__)
+# Important for Vercel: Set instance_path to /tmp to avoid the Read-only error
+app = Flask(__name__, instance_path='/tmp')
 
 # Load variables from .env into the system environment
 load_dotenv()
+
+# Check if we are on Vercel or have a DATABASE_URL set
+# If not, fall back to local SQLite for development
+database_url = os.environ.get('DATABASE_URL')
+
+if database_url:
+    # Fix for SQLAlchemy 1.4+ which requires "postgresql://" not "postgres://"
+    if database_url.startswith("postgres://"):
+        database_url = database_url.replace("postgres://", "postgresql://", 1)
+    app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+else:
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///library.db'
+
 # Fetch the key from the environment
 # If the .env file is missing, it uses a fallback 'dev-secret' for safety
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key-123')
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///library.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
@@ -26,7 +39,7 @@ login_manager.login_view = 'login'
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
-    password = db.Column(db.String(120), nullable=False)
+    password = db.Column(db.String(255), nullable=False)
     role = db.Column(db.String(20), nullable=False)
     
     # ADD THIS: If a user is deleted, their comments/interactions are deleted too
@@ -331,10 +344,16 @@ def get_reader_stats(user_id):
 
 if __name__ == '__main__':
     with app.app_context():
-        db.create_all()
+        # db.create_all()
         # Create a default admin if it doesn't exist
         if not User.query.filter_by(username='admin').first():
             admin = User(username='admin', password=generate_password_hash('admin123'), role='admin')
             db.session.add(admin)
             db.session.commit()
-    app.run(debug=True)
+    app.run(debug=os.environ.get('DEBUG'))
+
+@app.route('/init-db')
+def init_db():
+    with app.app_context():
+        db.create_all()
+    return "Database tables created successfully!"
