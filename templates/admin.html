@@ -29,8 +29,8 @@
                         <div class="mb-3">
                             <label class="form-label">User Role</label>
                             <select name="role" class="form-select">
-                                <option value="bookkeeper">Bookkeeper</option>
                                 <option value="reader">Reader</option>
+                                <option value="librarian">Librarian</option>
                             </select>
                         </div>
                         <button type="submit" class="btn btn-primary w-100">Add User Account</button>
@@ -63,8 +63,8 @@
                                 <td>
                                     {% if user.role == 'admin' %}
                                         <span class="badge bg-danger">Admin</span>
-                                    {% elif user.role == 'bookkeeper' %}
-                                        <span class="badge bg-info text-dark">Bookkeeper</span>
+                                    {% elif user.role == 'librarian' %}
+                                        <span class="badge bg-info text-dark">Librarian</span>
                                     {% else %}
                                         <span class="badge bg-secondary">Reader</span>
                                     {% endif %}

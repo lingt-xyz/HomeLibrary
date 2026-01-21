@@ -78,7 +78,7 @@ def login():
         if user and check_password_hash(user.password, request.form.get('password')):
             login_user(user)
             if user.role == 'admin': return redirect(url_for('admin_dashboard'))
-            if user.role == 'bookkeeper': return redirect(url_for('bookkeeper_dashboard'))
+            if user.role == 'librarian': return redirect(url_for('librarian_dashboard'))
             return redirect(url_for('reader_dashboard'))
         flash('Invalid username or password')
     return render_template('login.html')
@@ -89,7 +89,7 @@ def logout():
     logout_user()
     return redirect(url_for('login'))
 
-# Admin: Add Bookkeepers and Readers
+# Admin: Add Librarians and Readers
 @app.route('/admin', methods=['GET', 'POST'])
 @login_required
 @role_required('admin')
@@ -128,10 +128,10 @@ def delete_user(user_id):
     flash(f"User {user_to_delete.username} has been deleted.")
     return redirect(url_for('admin_dashboard'))
 
-@app.route('/bookkeeper', methods=['GET', 'POST'])
+@app.route('/librarian', methods=['GET', 'POST'])
 @login_required
-@role_required('bookkeeper')
-def bookkeeper_dashboard():
+@role_required('librarian')
+def librarian_dashboard():
     # Logic for adding books (as before)
     if request.method == 'POST':
         title = request.form.get('title')
@@ -147,16 +147,16 @@ def bookkeeper_dashboard():
     # Fetch all reader interactions, ordered by the most recent
     all_interactions = ReaderInteraction.query.order_by(ReaderInteraction.id.desc()).all()
     
-    return render_template('bookkeeper.html', books=books, interactions=all_interactions)
+    return render_template('librarian.html', books=books, interactions=all_interactions)
 
 @app.route('/delete_book/<int:id>')
 @login_required
-@role_required('bookkeeper')
+@role_required('librarian')
 def delete_book(id):
     book = Book.query.get(id)
     db.session.delete(book)
     db.session.commit()
-    return redirect(url_for('bookkeeper_dashboard'))
+    return redirect(url_for('librarian_dashboard'))
 
 @app.route('/reader', methods=['GET', 'POST'])
 @login_required

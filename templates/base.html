@@ -31,7 +31,7 @@
 
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm">
         <div class="container">
-            <a class="navbar-brand" href="{% if current_user.is_authenticated %}{% if current_user.role == 'admin' %}{{ url_for('admin_dashboard') }}{% elif current_user.role == 'bookkeeper' %}{{ url_for('bookkeeper_dashboard') }}{% else %}{{ url_for('reader_dashboard') }}{% endif %}{% else %}{{ url_for('login') }}{% endif %}">
+            <a class="navbar-brand" href="{% if current_user.is_authenticated %}{% if current_user.role == 'admin' %}{{ url_for('admin_dashboard') }}{% elif current_user.role == 'librarian' %}{{ url_for('librarian_dashboard') }}{% else %}{{ url_for('reader_dashboard') }}{% endif %}{% else %}{{ url_for('login') }}{% endif %}">
                 <i class="bi bi-book-half me-2"></i>LIBRARY SYS
             </a>
 
@@ -51,10 +51,10 @@
                         </li>
                         {% endif %}
 
-                        {# Bookkeeper View Link #}
-                        {% if current_user.role == 'bookkeeper' %}
+                        {# Librarian View Link #}
+                        {% if current_user.role == 'librarian' %}
                         <li class="nav-item">
-                            <a class="nav-link {{ 'active fw-bold' if request.endpoint == 'bookkeeper_dashboard' }}" href="{{ url_for('bookkeeper_dashboard') }}">
+                            <a class="nav-link {{ 'active fw-bold' if request.endpoint == 'librarian_dashboard' }}" href="{{ url_for('librarian_dashboard') }}">
                                 <i class="bi bi-journal-check me-1"></i> Inventory & Logs
                             </a>
                         </li>

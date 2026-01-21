@@ -33,7 +33,7 @@
                         <button type="submit" class="btn btn-primary">Update Profile</button>
                         <a href="
                             {% if current_user.role == 'admin' %}{{ url_for('admin_dashboard') }}
-                            {% elif current_user.role == 'bookkeeper' %}{{ url_for('bookkeeper_dashboard') }}
+                            {% elif current_user.role == 'librarian' %}{{ url_for('librarian_dashboard') }}
                             {% else %}{{ url_for('reader_dashboard') }}{% endif %}
                         " class="btn btn-outline-secondary">Back to Dashboard</a>
                     </div>
