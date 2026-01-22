@@ -7,14 +7,6 @@
                 <h4>Login</h4>
             </div>
             <div class="card-body">
-                {% with messages = get_flashed_messages() %}
-                  {% if messages %}
-                    {% for message in messages %}
-                      <div class="alert alert-danger py-2">{{ message }}</div>
-                    {% endfor %}
-                  {% endif %}
-                {% endwith %}
-                
                 <form method="POST">
                     <div class="mb-3">
                         <label class="form-label">Username</label>
