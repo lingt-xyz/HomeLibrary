@@ -15,13 +15,38 @@
                                value="{{ current_user.username }}" required>
                     </div>
                     
+                    <hr class="my-4">
+
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Change Password</label>
-                        <input type="password" name="password" class="form-control" 
-                               placeholder="Leave blank to keep current password">
-                        <div class="form-text">For security, use at least 8 characters.</div>
+                        <label class="form-label fw-bold">New Password</label>
+                        <div class="input-group">
+                            <input type="password" name="password" id="password" class="form-control" 
+                                placeholder="Leave blank to keep current" oninput="validatePassword()">
+                            <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('password', 'eye-icon-1')">
+                                <i class="bi bi-eye" id="eye-icon-1"></i>
+                            </button>
+                        </div>
+                        
+                        <div class="progress mt-2" style="height: 5px;">
+                            <div id="strength-bar" class="progress-bar" role="progressbar" style="width: 0%"></div>
+                        </div>
+                        <small id="strength-text" class="form-text"></small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Confirm New Password</label>
+                        <div class="input-group">
+                            <input type="password" name="confirm_password" id="confirm_password" 
+                                class="form-control" placeholder="Repeat new password" oninput="validatePassword()">
+                            <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('confirm_password', 'eye-icon-2')">
+                                <i class="bi bi-eye" id="eye-icon-2"></i>
+                            </button>
+                        </div>
+                        <div id="password-feedback" class="form-text"></div>
                     </div>
                     
+                    <hr class="my-4">
+
                     <div class="mb-3">
                         <label class="form-label fw-bold">Account Role</label>
                         <input type="text" class="form-control bg-light" 
@@ -30,7 +55,7 @@
                     </div>
 
                     <div class="d-grid gap-2 mt-4">
-                        <button type="submit" class="btn btn-primary">Update Profile</button>
+                        <button type="submit" class="btn btn-primary" id="submit-btn">Update Profile</button>
                         <a href="
                             {% if current_user.role == 'admin' %}{{ url_for('admin_dashboard') }}
                             {% elif current_user.role == 'librarian' %}{{ url_for('librarian_dashboard') }}
@@ -42,4 +67,84 @@
         </div>
     </div>
 </div>
+
+<script>
+function togglePassword(inputId, iconId) {
+    const passwordInput = document.getElementById(inputId);
+    const eyeIcon = document.getElementById(iconId);
+    
+    if (passwordInput.type === "password") {
+        passwordInput.type = "text";
+        eyeIcon.classList.remove("bi-eye");
+        eyeIcon.classList.add("bi-eye-slash");
+    } else {
+        passwordInput.type = "password";
+        eyeIcon.classList.remove("bi-eye-slash");
+        eyeIcon.classList.add("bi-eye");
+    }
+}
+function validatePassword() {
+    const password = document.getElementById('password').value;
+    const confirm = document.getElementById('confirm_password').value;
+    const strengthBar = document.getElementById('strength-bar');
+    const strengthText = document.getElementById('strength-text');
+    const feedback = document.getElementById('password-feedback');
+    const submitBtn = document.getElementById('submit-btn');
+
+    // 1. Calculate Strength Score (Same as before)
+    let strength = 0;
+    if (password.length > 0) {
+        if (password.length >= 8) strength += 25;
+        if (/[A-Z]/.test(password)) strength += 25;
+        if (/[0-9]/.test(password)) strength += 25;
+        if (/[^A-Za-z0-9]/.test(password)) strength += 25;
+    }
+
+    // 2. Update Strength Meter Visuals
+    strengthBar.style.width = strength + "%";
+    if (strength === 0) {
+        strengthText.innerHTML = "";
+    } else if (strength <= 25) {
+        strengthBar.className = "progress-bar bg-danger";
+        strengthText.innerHTML = "Weak";
+    } else if (strength <= 50) {
+        strengthBar.className = "progress-bar bg-warning";
+        strengthText.innerHTML = "Moderate";
+    } else if (strength <= 75) {
+        strengthBar.className = "progress-bar bg-info";
+        strengthText.innerHTML = "Strong";
+    } else {
+        strengthBar.className = "progress-bar bg-success";
+        strengthText.innerHTML = "Very Secure";
+    }
+
+    // 3. Independent Condition Checks
+    const isLongEnough = password.length >= 8;
+    const isMatching = (password === confirm);
+    const isChangingPassword = password.length > 0;
+
+    if (!isChangingPassword) {
+        // Case: User is not changing password
+        feedback.innerHTML = "";
+        submitBtn.disabled = false;
+    } else {
+        // Case: User is typing a new password
+        if (!isLongEnough) {
+            feedback.innerHTML = '<span class="text-danger"><i class="bi bi-x-circle"></i> Password must be at least 8 characters.</span>';
+            submitBtn.disabled = true;
+        } else if (confirm.length === 0) {
+            feedback.innerHTML = '<span class="text-muted">Please confirm your new password.</span>';
+            submitBtn.disabled = true;
+        } else if (!isMatching) {
+            feedback.innerHTML = '<span class="text-danger"><i class="bi bi-exclamation-triangle"></i> Passwords do not match.</span>';
+            submitBtn.disabled = true;
+        } else {
+            // All conditions met
+            feedback.innerHTML = '<span class="text-success"><i class="bi bi-check-circle-fill"></i> Ready to update!</span>';
+            submitBtn.disabled = false;
+        }
+    }
+}
+</script>
+</script>
 {% endblock %}
