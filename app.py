@@ -1,17 +1,28 @@
 import os
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
+import secrets
 from flask import Flask, render_template, redirect, url_for, request, flash
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 from dotenv import load_dotenv
+from flask_mail import Mail, Message
 
 # Important for Vercel: Set instance_path to /tmp to avoid the Read-only error
 app = Flask(__name__, instance_path='/tmp')
 
 # Load variables from .env into the system environment
 load_dotenv()
+
+app.config['MAIL_SERVER'] = 'sandbox.smtp.mailtrap.io'
+app.config['MAIL_PORT'] = 2525
+app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
+app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USE_SSL'] = False
+
+mail = Mail(app)
 
 # Check if we are on Vercel or have a DATABASE_URL set
 # If not, fall back to local SQLite for development
@@ -42,6 +53,12 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(120), unique=True, nullable=True)
     password = db.Column(db.String(255), nullable=False)
     role = db.Column(db.String(20), nullable=False, default='reader')
+
+    reset_token = db.Column(db.String(100), unique=True, nullable=True)
+    token_expiry = db.Column(db.DateTime, nullable=True)
+    password_last_changed = db.Column(db.DateTime, nullable=True)
+    failed_login_attempts = db.Column(db.Integer, default=0)
+    lockout_until = db.Column(db.DateTime, nullable=True)
 
     # ADD THIS: If a user is deleted, their comments/interactions are deleted too
     interactions = db.relationship('ReaderInteraction', backref='user', cascade="all, delete-orphan")
@@ -88,13 +105,43 @@ def index():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        user = User.query.filter_by(username=request.form.get('username')).first()
-        if user and check_password_hash(user.password, request.form.get('password')):
-            login_user(user)
-            if user.role == 'admin': return redirect(url_for('admin_dashboard'))
-            if user.role == 'librarian': return redirect(url_for('librarian_dashboard'))
-            return redirect(url_for('reader_dashboard'))
-        flash('Invalid username or password', 'danger')
+        username = request.form.get('username')
+        password = request.form.get('password')
+        user = User.query.filter_by(username=username).first()
+
+        if user:
+            # 1. Check if the user is currently locked out
+            if user.lockout_until and user.lockout_until > datetime.now(timezone.utc):
+                time_left = (user.lockout_until - datetime.now(timezone.utc)).seconds // 60
+                flash(f"Account locked. Try again in {max(1, time_left)} minutes.", "danger")
+                return redirect(url_for('login'))
+
+            # 2. Check the password
+            if check_password_hash(user.password, password):
+                # SUCCESS: Reset attempts and lockout
+                user.failed_login_attempts = 0
+                user.lockout_until = None
+                db.session.commit()
+                login_user(user)
+                if user.role == 'admin': return redirect(url_for('admin_dashboard'))
+                if user.role == 'librarian': return redirect(url_for('librarian_dashboard'))
+                return redirect(url_for('reader_dashboard'))
+            else:
+                # FAILURE: Increment counter
+                user.failed_login_attempts += 1
+                
+                if user.failed_login_attempts >= 5:
+                    # Lock the account for 10 minutes
+                    user.lockout_until = datetime.now(timezone.utc) + timedelta(minutes=10)
+                    flash("Too many failed attempts. Account locked for 10 minutes.", "danger")
+                else:
+                    attempts_left = 5 - user.failed_login_attempts
+                    flash(f"Invalid password. {attempts_left} attempts remaining.", "warning")
+                
+                db.session.commit()
+        else:
+            flash("User not found.", "danger")
+
     return render_template('login.html')
 
 @app.route('/logout')
@@ -102,6 +149,68 @@ def login():
 def logout():
     logout_user()
     return redirect(url_for('login'))
+
+@app.route('/forgot_password', methods=['GET', 'POST'])
+def forgot_password():
+    if request.method == 'POST':
+        email_input = request.form.get('email')
+        user = User.query.filter_by(email=email_input).first()
+
+        if user:
+            token = secrets.token_urlsafe(32)
+            user.reset_token = token
+            user.token_expiry = datetime.now(datetime.timezone.utc) + timedelta(minutes=30)
+            db.session.commit()
+
+            # Generate the URL
+            reset_url = url_for('reset_with_token', token=token, _external=True)
+            
+            # Create the Message object
+            msg = Message("Reset Your Home Library Password",
+                          sender="noreply@homelibrary.com",
+                          recipients=[user.email])
+            
+            # Set the HTML body
+            msg.html = render_template('email_reset.html', reset_url=reset_url)
+            
+            try:
+                mail.send(msg)
+                flash("A professional reset link has been sent to your email.", "info")
+            except Exception as e:
+                flash("Error sending email. Check your Mailtrap credentials.", "danger")
+
+        else:
+            flash("If an account exists with that email, a reset link has been sent.", "info")
+            
+        return redirect(url_for('login'))
+    return render_template('forgot_password.html')
+
+@app.route('/reset_password/<token>', methods=['GET', 'POST'])
+def reset_with_token(token):
+    user = User.query.filter_by(reset_token=token).first()
+
+    # Verify token exists and hasn't expired
+    if not user or user.token_expiry < datetime.utcnow():
+        flash("The reset link is invalid or has expired.", "danger")
+        return redirect(url_for('forgot_password'))
+
+    if request.method == 'POST':
+        new_password = request.form.get('password')
+        confirm_password = request.form.get('confirm_password')
+
+        if new_password == confirm_password and len(new_password) >= 8:
+            user.password = generate_password_hash(new_password, method='pbkdf2:sha256')
+            user.reset_token = None # Clear the token so it can't be used again
+            user.token_expiry = None
+            user.password_last_changed = datetime.now(datetime.timezone.utc)
+            current_user.password_last_changed = datetime.now(datetime.timezone.utc)
+            db.session.commit()
+            flash("Your password has been reset!", "success")
+            return redirect(url_for('login'))
+        else:
+            flash("Passwords must match and be 8+ characters.", "warning")
+
+    return render_template('reset_password_form.html') # A form identical to your profile password section
 
 # Admin: Add Librarians and Readers
 @app.route('/admin', methods=['GET', 'POST'])
