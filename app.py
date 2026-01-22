@@ -39,9 +39,10 @@ login_manager.login_view = 'login'
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=True)
     password = db.Column(db.String(255), nullable=False)
-    role = db.Column(db.String(20), nullable=False)
-    
+    role = db.Column(db.String(20), nullable=False, default='reader')
+
     # ADD THIS: If a user is deleted, their comments/interactions are deleted too
     interactions = db.relationship('ReaderInteraction', backref='user', cascade="all, delete-orphan")
 
@@ -306,6 +307,7 @@ def profile():
     if request.method == 'POST':
         curr_pw_input = request.form.get('current_password')
         new_username = request.form.get('username')
+        new_email = request.form.get('email')
         new_password = request.form.get('password')
         confirm_password = request.form.get('confirm_password')
 
@@ -314,13 +316,13 @@ def profile():
             flash("Incorrect current password. Changes could not be saved.", "danger")
             return redirect(url_for('profile'))
 
-        # 2. Update Username
+        # 2. Update Basic Info
         current_user.username = new_username
+        current_user.email = new_email
 
         # 3. Handle Password Change (if provided)
         if new_password:
             if new_password == confirm_password and len(new_password) >= 8:
-                # Use pbkdf2:sha256 for local Mac Mini compatibility
                 current_user.password = generate_password_hash(new_password, method='pbkdf2:sha256')
                 flash("Profile and password updated successfully!", "success")
             else:

@@ -14,7 +14,14 @@
                         <input type="text" name="username" class="form-control" 
                                value="{{ current_user.username }}" required>
                     </div>
-                    
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">Recovery Email</label>
+                        <input type="email" name="email" class="form-control" 
+                            value="{{ current_user.email or '' }}" 
+                            placeholder="e.g. name@example.com">
+                        <div class="form-text">We will use this email if you ever need to reset your password.</div>
+                    </div>
+
                     <hr>
 
                     <h6 class="text-muted text-uppercase small fw-bold mb-3">Change Password</h6>
