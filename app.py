@@ -304,27 +304,34 @@ def add_comment(book_id):
 @login_required
 def profile():
     if request.method == 'POST':
-        new_username = request.form.get('username').strip()
+        curr_pw_input = request.form.get('current_password')
+        new_username = request.form.get('username')
         new_password = request.form.get('password')
-        
-        # Check if the new username is already taken by someone else
-        existing_user = User.query.filter_by(username=new_username).first()
-        if existing_user and existing_user.id != current_user.id:
-            flash("Error: That username is already taken.", "danger")
+        confirm_password = request.form.get('confirm_password')
+
+        # 1. CRITICAL: Verify the current password first
+        if not check_password_hash(current_user.password, curr_pw_input):
+            flash("Incorrect current password. Changes could not be saved.", "danger")
             return redirect(url_for('profile'))
 
-        # Update Username
-        if new_username:
-            current_user.username = new_username
-        
-        # Update Password (if provided)
+        # 2. Update Username
+        current_user.username = new_username
+
+        # 3. Handle Password Change (if provided)
         if new_password:
-            current_user.password = generate_password_hash(new_password)
-            
+            if new_password == confirm_password and len(new_password) >= 8:
+                # Use pbkdf2:sha256 for local Mac Mini compatibility
+                current_user.password = generate_password_hash(new_password, method='pbkdf2:sha256')
+                flash("Profile and password updated successfully!", "success")
+            else:
+                flash("New passwords must match and be at least 8 characters.", "warning")
+                return redirect(url_for('profile'))
+        else:
+            flash("Profile updated successfully!", "success")
+
         db.session.commit()
-        flash("Profile updated successfully!", "success")
         return redirect(url_for('profile'))
-        
+
     return render_template('profile.html')
 
 def get_reader_stats(user_id):

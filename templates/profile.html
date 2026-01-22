@@ -5,62 +5,59 @@
     <div class="col-md-6">
         <div class="card shadow-sm border-0">
             <div class="card-header bg-primary text-white">
-                <h4 class="mb-0">Your Profile</h4>
+                <h4 class="mb-0">Profile Settings</h4>
             </div>
             <div class="card-body p-4">
                 <form method="POST">
-                    <div class="mb-3">
+                    <div class="mb-4">
                         <label class="form-label fw-bold">Username</label>
                         <input type="text" name="username" class="form-control" 
                                value="{{ current_user.username }}" required>
                     </div>
                     
-                    <hr class="my-4">
+                    <hr>
 
+                    <h6 class="text-muted text-uppercase small fw-bold mb-3">Change Password</h6>
+                    
                     <div class="mb-3">
-                        <label class="form-label fw-bold">New Password</label>
+                        <label class="form-label small">New Password</label>
                         <div class="input-group">
                             <input type="password" name="password" id="password" class="form-control" 
-                                placeholder="Leave blank to keep current" oninput="validatePassword()">
-                            <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('password', 'eye-icon-1')">
-                                <i class="bi bi-eye" id="eye-icon-1"></i>
+                                   placeholder="Leave blank to keep current" oninput="validatePassword()">
+                            <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('password', 'eye-1')">
+                                <i class="bi bi-eye" id="eye-1"></i>
                             </button>
                         </div>
-                        
                         <div class="progress mt-2" style="height: 5px;">
                             <div id="strength-bar" class="progress-bar" role="progressbar" style="width: 0%"></div>
                         </div>
                         <small id="strength-text" class="form-text"></small>
                     </div>
 
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Confirm New Password</label>
+                    <div class="mb-4">
+                        <label class="form-label small">Confirm New Password</label>
                         <div class="input-group">
                             <input type="password" name="confirm_password" id="confirm_password" 
-                                class="form-control" placeholder="Repeat new password" oninput="validatePassword()">
-                            <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('confirm_password', 'eye-icon-2')">
-                                <i class="bi bi-eye" id="eye-icon-2"></i>
+                                   class="form-control" placeholder="Repeat new password" oninput="validatePassword()">
+                            <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('confirm_password', 'eye-2')">
+                                <i class="bi bi-eye" id="eye-2"></i>
                             </button>
                         </div>
                         <div id="password-feedback" class="form-text"></div>
                     </div>
-                    
-                    <hr class="my-4">
 
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Account Role</label>
-                        <input type="text" class="form-control bg-light" 
-                               value="{{ current_user.role|capitalize }}" readonly>
-                        <div class="form-text text-danger">Only an Admin can change your role.</div>
+                    <hr>
+
+                    <div class="bg-light p-3 rounded mb-4">
+                        <label class="form-label fw-bold text-primary">Verify Current Password</label>
+                        <input type="password" name="current_password" class="form-control" 
+                               placeholder="Required to save any changes" required>
+                        <div class="form-text">Please enter your existing password to authorize these changes.</div>
                     </div>
 
-                    <div class="d-grid gap-2 mt-4">
-                        <button type="submit" class="btn btn-primary" id="submit-btn">Update Profile</button>
-                        <a href="
-                            {% if current_user.role == 'admin' %}{{ url_for('admin_dashboard') }}
-                            {% elif current_user.role == 'librarian' %}{{ url_for('librarian_dashboard') }}
-                            {% else %}{{ url_for('reader_dashboard') }}{% endif %}
-                        " class="btn btn-outline-secondary">Back to Dashboard</a>
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary" id="submit-btn">Save All Changes</button>
+                        <a href="{{ url_for('reader_dashboard') }}" class="btn btn-outline-secondary">Cancel</a>
                     </div>
                 </form>
             </div>
