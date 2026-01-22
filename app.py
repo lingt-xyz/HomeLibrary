@@ -273,7 +273,7 @@ def delete_user(user_id):
 @login_required
 @role_required('librarian')
 def librarian_dashboard():
-    # Logic for adding books (as before)
+    # 1. Handle Adding Books (POST logic remains the same)
     if request.method == 'POST':
         title = request.form.get('title')
         author = request.form.get('author')
@@ -281,14 +281,32 @@ def librarian_dashboard():
         db.session.add(new_book)
         db.session.commit()
         flash("New book added to library.", "success")
+        return redirect(url_for('librarian_dashboard'))
 
-    # Data for the page
+    # 2. Get Search and Filter Parameters for Interactions
+    search_query = request.args.get('search', '')
+
+    # 3. Base Queries
     books = Book.query.all()
     
-    # Fetch all reader interactions, ordered by the most recent
-    all_interactions = ReaderInteraction.query.order_by(ReaderInteraction.id.desc()).all()
+    # We start with the ReaderInteraction query but JOIN User and Book
+    interactions_query = ReaderInteraction.query.join(User).join(Book)
+
+    # 4. Apply Case-Insensitive Search
+    if search_query:
+        interactions_query = interactions_query.filter(
+            (User.username.ilike(f'%{search_query}%')) |
+            (Book.title.ilike(f'%{search_query}%')) |
+            (Book.author.ilike(f'%{search_query}%'))
+        )
+
+    # 5. Finalize and Order
+    all_interactions = interactions_query.order_by(ReaderInteraction.id.desc()).all()
     
-    return render_template('librarian.html', books=books, interactions=all_interactions)
+    return render_template('librarian.html', 
+                           books=books, 
+                           interactions=all_interactions,
+                           search_query=search_query)
 
 @app.route('/delete_book/<int:id>')
 @login_required
