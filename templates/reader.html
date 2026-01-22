@@ -116,19 +116,34 @@
                                     <div class="text-muted small">{{ book.author }}</div>
                                 </td>
                                 <td>
-                                    <form action="{{ url_for('add_comment', book_id=book.id) }}" method="POST" class="row g-2 align-items-center">
-                                        <div class="col-9">
-                                            <textarea name="comment" 
-                                                    class="form-control form-control-sm" 
+                                    <form action="{{ url_for('add_comment', book_id=book.id) }}" method="POST" class="mb-3">
+                                        <div class="input-group shadow-sm">
+                                            <textarea name="comment"
+                                                    id="comment-box-{{ book.id }}"
+                                                    class="form-control form-control-sm border-end-0" 
                                                     rows="2" 
-                                                    maxlength="100" 
                                                     placeholder="What did you think?"
-                                                    required>{{ user_comments.get(book.id, '') }}</textarea>
-                                        </div>
-                                        <div class="col-3">
-                                            <button type="submit" class="btn btn-sm {{ 'btn-info' if book.id in user_comments else 'btn-primary' }} w-100">
-                                                {{ 'Update' if book.id in user_comments else 'Read' }}
+                                                    oninput="updateWordCount('{{ book.id }}')"
+                                                    required
+                                                    style="resize: none;">{{ user_comments.get(book.id, '') }}</textarea>
+                                            
+                                            <button type="submit" id="submit-btn-{{ book.id }}" 
+                                                    class="btn {{ 'btn-info' if book.id in user_comments else 'btn-primary' }} d-flex align-items-center px-3"
+                                                    disabled>
+                                                <span>
+                                                    <i class="bi {{ 'bi-pencil-square' if book.id in user_comments else 'bi-book' }} d-block"></i>
+                                                    <small style="font-size: 0.65rem; text-transform: uppercase; font-weight: bold;">
+                                                        {{ 'Update' if book.id in user_comments else 'Read' }}
+                                                    </small>
+                                                </span>
                                             </button>
+                                        </div>
+
+                                        <div class="d-flex justify-content-between px-2 mt-1">
+                                            <small id="word-count-text-{{ book.id }}" class="text-muted" style="font-size: 0.75rem;">0 / 30 words</small>
+                                            <div id="word-warning-{{ book.id }}" class="text-danger d-none" style="font-size: 0.75rem;">
+                                                <i class="bi bi-info-circle me-1"></i>Min. 30 words
+                                            </div>
                                         </div>
                                     </form>
                                 </td>
@@ -159,4 +174,5 @@
         </div>
     </div>
 </div>
+<script src="{{ url_for('static', filename='js/validation.js') }}"></script>
 {% endblock %}

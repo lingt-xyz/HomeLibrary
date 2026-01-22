@@ -111,3 +111,24 @@ function validateEmail() {
         submitBtn.disabled = false;
     }
 }
+
+function updateWordCount(bookId) {
+    const textarea = document.getElementById(`comment-box-${bookId}`);
+    const countText = document.getElementById(`word-count-text-${bookId}`);
+    const warning = document.getElementById(`word-warning-${bookId}`);
+    const submitBtn = document.getElementById(`submit-btn-${bookId}`);
+
+    const words = textarea.value.trim().split(/\s+/).filter(word => word.length > 0);
+    const wordCount = words.length;
+
+    countText.innerText = `${wordCount} / 30 words`;
+
+    if (wordCount < 30) {
+        warning.classList.remove('d-none');
+        submitBtn.disabled = true;
+    } else {
+        warning.classList.add('d-none');
+        submitBtn.disabled = false;
+        countText.classList.add('text-success');
+    }
+}

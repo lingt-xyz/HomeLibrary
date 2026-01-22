@@ -409,11 +409,14 @@ def reader_dashboard():
 @role_required('reader')
 def add_comment(book_id):
     comment = request.form.get('comment', '').strip()
+    # Split by any whitespace and filter out empty strings
+    words = [w for w in comment.split() if w]
+    word_count = len(words)
 
-    if not comment:
-        flash("You must write a comment to mark this book as read!", "warning")
+    if word_count < 30:
+        flash(f"Your comment is only {word_count} words. Please write at least 30 words to share a meaningful reflection.", "warning")
         return redirect(url_for('reader_dashboard'))
-        
+
     # 1. Search for an existing interaction for this user and this book
     existing_interaction = ReaderInteraction.query.filter_by(
         user_id=current_user.id, 
