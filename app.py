@@ -237,7 +237,7 @@ def admin_dashboard():
             db.session.commit()
             flash(f"User {username} created as {role}!", "success")
     # Fetch all users to display them in the list
-    all_users = User.query.all() 
+    all_users = User.query.order_by(User.username.asc()).all()
     return render_template('admin.html', users=all_users)
 
 @app.route('/delete_user/<int:user_id>')
