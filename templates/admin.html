@@ -39,59 +39,85 @@
             </div>
         </div>
 
-        <div class="col-md-8">
+        <div class="col-md-8 mx-auto">
             <div class="card shadow-sm border-0">
-                <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">Manage Existing Users</h5>
-                    <span class="badge bg-light text-dark">{{ users|length }} Total</span>
+                <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center py-3">
+                    <h5 class="mb-0"><i class="bi bi-people-fill me-2"></i>Manage Existing Users</h5>
+                    <span class="badge bg-primary">{{ users|length }} Total Users</span>
                 </div>
+
+                <div class="card-body bg-light border-bottom p-3">
+                    <form action="{{ url_for('admin_dashboard') }}" method="GET" class="row g-2 align-items-center">
+                        <div class="col-auto flex-grow-1">
+                            <div class="input-group">
+                                <span class="input-group-text bg-white border-end-0">
+                                    <i class="bi bi-search text-muted"></i>
+                                </span>
+                                <input type="text" name="search" class="form-control border-start-0" 
+                                    placeholder="Search by username or email..." 
+                                    value="{{ search_query or '' }}">
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <button type="submit" class="btn btn-primary">Search</button>
+                            {% if search_query %}
+                                <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-secondary">Clear</a>
+                            {% endif %}
+                        </div>
+                    </form>
+                </div>
+
                 <div class="card-body p-0">
-                    <table class="table table-hover mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th class="ps-3">ID</th>
-                                <th>Username</th>
-                                <th>Email</th>
-                                <th>Role</th>
-                                <th class="text-end pe-3">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for user in users %}
-                            <tr>
-                                <td class="ps-3 text-muted">{{ user.id }}</td>
-                                <td><strong>{{ user.username }}</strong></td>
-                                <td>
-                                    {% if user.email %}
-                                        <span class="text-muted small">{{ user.email }}</span>
-                                    {% else %}
-                                        <span class="badge bg-light text-dark fw-normal">No email set</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if user.role == 'admin' %}
-                                        <span class="badge bg-danger">Admin</span>
-                                    {% elif user.role == 'librarian' %}
-                                        <span class="badge bg-info text-dark">Librarian</span>
-                                    {% else %}
-                                        <span class="badge bg-secondary">Reader</span>
-                                    {% endif %}
-                                </td>
-                                <td class="text-end pe-3">
-                                    {% if user.id != current_user.id %}
-                                        <a href="{{ url_for('delete_user', user_id=user.id) }}" 
-                                           class="btn btn-sm btn-outline-danger"
-                                           onclick="return confirm('Are you sure you want to delete user: {{ user.username }}?')">
-                                            Delete
-                                        </a>
-                                    {% else %}
-                                        <small class="text-success fw-bold">Current User</small>
-                                    {% endif %}
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0 align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="ps-4">ID</th>
+                                    <th>Username</th>
+                                    <th>Email Address</th>
+                                    <th>Role</th>
+                                    <th class="text-end pe-4">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for user in users %}
+                                <tr>
+                                    <td class="ps-4 text-muted small">#{{ user.id }}</td>
+                                    <td>
+                                        <span class="fw-bold text-dark">{{ user.username }}</span>
+                                    </td>
+                                    <td>
+                                        {% if user.email %}
+                                            <span class="text-muted">{{ user.email }}</span>
+                                        {% else %}
+                                            <span class="text-danger small italic">No email provided</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if user.role == 'admin' %}
+                                            <span class="badge rounded-pill bg-danger">Admin</span>
+                                        {% elif user.role == 'librarian' %}
+                                            <span class="badge rounded-pill bg-info text-dark">Librarian</span>
+                                        {% else %}
+                                            <span class="badge rounded-pill bg-secondary">Reader</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end pe-4">
+                                        {% if user.id != current_user.id %}
+                                            <a href="{{ url_for('delete_user', user_id=user.id) }}" 
+                                            class="btn btn-sm btn-outline-danger"
+                                            onclick="return confirm('Delete user: {{ user.username }}?')">
+                                                <i class="bi bi-trash"></i> Delete
+                                            </a>
+                                        {% else %}
+                                            <span class="badge bg-success-subtle text-success border border-success-subtle">You</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>

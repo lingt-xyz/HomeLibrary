@@ -5,6 +5,7 @@ from flask import Flask, render_template, redirect, url_for, request, flash
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
+from sqlalchemy import func
 from functools import wraps
 from dotenv import load_dotenv
 from flask_mail import Mail, Message
@@ -236,9 +237,21 @@ def admin_dashboard():
             db.session.add(new_user)
             db.session.commit()
             flash(f"User {username} created as {role}!", "success")
-    # Fetch all users to display them in the list
-    all_users = User.query.order_by(User.username.asc()).all()
-    return render_template('admin.html', users=all_users)
+    
+    # Get the search query from the URL (e.g., /admin?search=john)
+    search_query = request.args.get('search', '')
+    # Build the base query
+    query = User.query
+    # If there's a search term, filter by username or email (case-insensitive)
+    if search_query:
+        query = query.filter(
+            (User.username.ilike(f'%{search_query}%')) | 
+            (User.email.ilike(f'%{search_query}%'))
+        )
+
+    # Sort by username, forced to lowercase so 'apple' and 'Apple' are treated equally
+    users = query.order_by(func.lower(User.username).asc()).all()
+    return render_template('admin.html', users=users)
 
 @app.route('/delete_user/<int:user_id>')
 @login_required
