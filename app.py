@@ -215,7 +215,7 @@ def reset_with_token(token):
         else:
             flash("Passwords must match and be 8+ characters.", "warning")
 
-    return render_template('reset_password_form.html') # A form identical to your profile password section
+    return render_template('reset_password.html') # A form identical to your profile password section
 
 # Admin: Add Librarians and Readers
 @app.route('/admin', methods=['GET', 'POST'])

@@ -18,7 +18,9 @@
                         <label class="form-label fw-bold">Recovery Email</label>
                         <input type="email" name="email" class="form-control" 
                             value="{{ current_user.email or '' }}" 
-                            placeholder="e.g. name@example.com">
+                            placeholder="e.g. name@example.com"
+                            oninput="validateEmail()">
+                        <div id="email-feedback" class="mt-1"></div>
                         <div class="form-text">We will use this email if you ever need to reset your password.</div>
                     </div>
 
@@ -89,5 +91,5 @@
     </div>
 </div>
 
-<script src="{{ url_for('static', filename='js/password-validation.js') }}"></script>
+<script src="{{ url_for('static', filename='js/validation.js') }}"></script>
 {% endblock %}

@@ -74,3 +74,40 @@ function validatePassword() {
         }
     }
 }
+
+/**
+ * Validates the email format and updates the UI
+ */
+function validateEmail() {
+    const emailInput = document.querySelector('input[type="email"]');
+    if (!emailInput) return; // Exit if email field isn't on the current page
+
+    const email = emailInput.value;
+    const emailFeedback = document.getElementById('email-feedback');
+    const submitBtn = document.getElementById('submit-btn');
+
+    // Simple Regex for basic email format (name@domain.ext)
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    // We only validate if there is text in the box
+    if (email.length > 0) {
+        if (emailRegex.test(email)) {
+            emailInput.classList.remove('is-invalid');
+            emailInput.classList.add('is-valid');
+            if (emailFeedback) emailFeedback.innerHTML = "";
+            submitBtn.disabled = false;
+        } else {
+            emailInput.classList.remove('is-valid');
+            emailInput.classList.add('is-invalid');
+            if (emailFeedback) {
+                emailFeedback.innerHTML = '<span class="text-danger small">Please enter a valid email address.</span>';
+            }
+            submitBtn.disabled = true;
+        }
+    } else {
+        // If empty, reset the styles
+        emailInput.classList.remove('is-invalid', 'is-valid');
+        if (emailFeedback) emailFeedback.innerHTML = "";
+        submitBtn.disabled = false;
+    }
+}
