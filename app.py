@@ -384,8 +384,8 @@ def reader_dashboard():
     query = Book.query
     if search_query:
         query = query.filter(
-            (Book.title.contains(search_query)) | 
-            (Book.author.contains(search_query))
+            (Book.title.icontains(search_query)) | 
+            (Book.author.icontains(search_query))
         )
 
     pagination = query.paginate(page=page, per_page=per_page)
