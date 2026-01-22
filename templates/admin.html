@@ -51,6 +51,7 @@
                             <tr>
                                 <th class="ps-3">ID</th>
                                 <th>Username</th>
+                                <th>Email</th>
                                 <th>Role</th>
                                 <th class="text-end pe-3">Actions</th>
                             </tr>
@@ -60,6 +61,13 @@
                             <tr>
                                 <td class="ps-3 text-muted">{{ user.id }}</td>
                                 <td><strong>{{ user.username }}</strong></td>
+                                <td>
+                                    {% if user.email %}
+                                        <span class="text-muted small">{{ user.email }}</span>
+                                    {% else %}
+                                        <span class="badge bg-light text-dark fw-normal">No email set</span>
+                                    {% endif %}
+                                </td>
                                 <td>
                                     {% if user.role == 'admin' %}
                                         <span class="badge bg-danger">Admin</span>

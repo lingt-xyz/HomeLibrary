@@ -15,10 +15,11 @@ app = Flask(__name__, instance_path='/tmp')
 # Load variables from .env into the system environment
 load_dotenv()
 
-app.config['MAIL_SERVER'] = 'sandbox.smtp.mailtrap.io'
+# Looking to send emails in production? Check out our Email API/SMTP product!
+app.config['MAIL_SERVER']='sandbox.smtp.mailtrap.io'
 app.config['MAIL_PORT'] = 2525
-app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
-app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
+app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
+app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
 app.config['MAIL_USE_TLS'] = True
 app.config['MAIL_USE_SSL'] = False
 
@@ -40,6 +41,8 @@ else:
 # If the .env file is missing, it uses a fallback 'dev-secret' for safety
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key-123')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+# Set remember me cookie to expire after 30 days
+app.config['REMEMBER_COOKIE_DURATION'] = timedelta(days=30)
 
 db = SQLAlchemy(app)
 login_manager = LoginManager(app)
@@ -107,6 +110,8 @@ def login():
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
+        # Check if the "remember" checkbox was ticked
+        remember_me = True if request.form.get('remember') else False
         user = User.query.filter_by(username=username).first()
 
         if user:
@@ -122,7 +127,7 @@ def login():
                 user.failed_login_attempts = 0
                 user.lockout_until = None
                 db.session.commit()
-                login_user(user)
+                login_user(user, remember=remember_me)
                 if user.role == 'admin': return redirect(url_for('admin_dashboard'))
                 if user.role == 'librarian': return redirect(url_for('librarian_dashboard'))
                 return redirect(url_for('reader_dashboard'))
@@ -159,7 +164,7 @@ def forgot_password():
         if user:
             token = secrets.token_urlsafe(32)
             user.reset_token = token
-            user.token_expiry = datetime.now(datetime.timezone.utc) + timedelta(minutes=30)
+            user.token_expiry = datetime.now(timezone.utc) + timedelta(minutes=30)
             db.session.commit()
 
             # Generate the URL
@@ -202,8 +207,8 @@ def reset_with_token(token):
             user.password = generate_password_hash(new_password, method='pbkdf2:sha256')
             user.reset_token = None # Clear the token so it can't be used again
             user.token_expiry = None
-            user.password_last_changed = datetime.now(datetime.timezone.utc)
-            current_user.password_last_changed = datetime.now(datetime.timezone.utc)
+            user.password_last_changed = datetime.now(timezone.utc)
+            current_user.password_last_changed = datetime.now(timezone.utc)
             db.session.commit()
             flash("Your password has been reset!", "success")
             return redirect(url_for('login'))
