@@ -1,5 +1,5 @@
 import os
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 import pytz
 import secrets
 from flask import Flask, render_template, redirect, url_for, request, flash
@@ -340,6 +340,8 @@ def delete_comment(interaction_id):
 
     return redirect(url_for('librarian_dashboard'))
 
+APP_START_DATE = date(2026, 1, 21)
+
 @app.route('/reader', methods=['GET', 'POST'])
 @login_required
 @role_required('reader')
@@ -393,7 +395,33 @@ def reader_dashboard():
     # Total count for the user
     total_results = pagination.total
 
+    # Get user's local timezone from cookie
+    user_tz_name = request.cookies.get('timezone', 'UTC')
+    local_tz = pytz.timezone(user_tz_name)
+    today_local = datetime.now(local_tz).date()
+
+    # Calculate how many days to show (up to 14, but not before APP_START_DATE)
+    days_since_start = (today_local - APP_START_DATE).days + 1
+    display_count = min(days_since_start, 14)
+
+    # Get interaction dates
     interactions = ReaderInteraction.query.filter_by(user_id=current_user.id).all()
+    read_dates = set()
+    for interaction in interactions:
+        utc_dt = pytz.utc.localize(interaction.timestamp)
+        read_dates.add(utc_dt.astimezone(local_tz).date())
+
+    # Generate the limited list
+    relevant_days = []
+    # Loop from (display_count - 1) down to 0
+    for i in range(display_count - 1, -1, -1):
+        d = today_local - timedelta(days=i)
+        relevant_days.append({
+            'date': d,
+            'is_read': d in read_dates,
+            'is_today': d == today_local
+        })
+
     user_comments = {i.book_id: i.comment for i in interactions}
     history = ReaderInteraction.query.filter_by(user_id=current_user.id).order_by(ReaderInteraction.timestamp.desc()).all()
     stats = get_reader_stats(current_user.id)
@@ -403,7 +431,8 @@ def reader_dashboard():
                            total_results=total_results, 
                            history=history,
                            user_comments=user_comments,
-                           search_query=search_query)
+                           search_query=search_query,
+                           days_history=relevant_days)
 
 @app.route('/reader/comment/<int:book_id>', methods=['POST'])
 @login_required
