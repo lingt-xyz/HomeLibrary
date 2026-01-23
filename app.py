@@ -1,5 +1,6 @@
 import os
 from datetime import datetime, timedelta, timezone
+import pytz
 import secrets
 from flask import Flask, render_template, redirect, url_for, request, flash
 from flask_sqlalchemy import SQLAlchemy
@@ -521,6 +522,25 @@ def get_reader_stats(user_id):
         "progress": min(progress, 100),
         "next": next_milestone
     }
+
+@app.template_filter('to_local')
+def to_local(dt):
+    if not dt:
+        return ""
+    
+    # 1. Get the timezone from the cookie, default to 'UTC' if not found
+    user_tz = request.cookies.get('timezone', 'UTC')
+    
+    try:
+        # 2. Localize the naive UTC datetime from the DB
+        utc_dt = pytz.utc.localize(dt)
+        # 3. Convert to the detected timezone
+        local_tz = pytz.timezone(user_tz)
+        local_dt = utc_dt.astimezone(local_tz)
+        return local_dt.strftime('%Y-%m-%d %H:%M')
+    except Exception:
+        # Fallback if something goes wrong with the cookie string
+        return dt.strftime('%Y-%m-%d %H:%M')
 
 # --- Initialization ---
 
