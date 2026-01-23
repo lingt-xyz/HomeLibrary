@@ -63,7 +63,15 @@
                         <i class="bi bi-person-badge me-3 text-primary fs-5"></i>
                         <h6 class="mb-0 fw-bold text-dark">Recent Activity for: <span class="text-primary">{{ search_query }}</span></h6>
                     </div>
-                    <small class="text-muted fw-semibold">Last {{ user_activity|length }} Days</small>
+                    <div class="d-flex gap-2 align-items-center">
+                        {% set target_user = interactions[0].user if interactions else None %}
+                        {% if target_user %}
+                            <a href="{{ url_for('download_report', user_id=target_user.id) }}" class="btn btn-sm btn-outline-danger">
+                                <i class="bi bi-file-pdf me-1"></i>Export PDF
+                            </a>
+                        {% endif %}
+                        <small class="text-muted fw-semibold">Last {{ user_activity|length }} Days</small>
+                    </div>
                 </div>
                 <div class="card-body p-4">
                     <div class="d-flex flex-wrap gap-3 justify-content-start">

@@ -2,10 +2,11 @@ import os
 from datetime import date, datetime, timedelta, timezone
 import pytz
 import secrets
-from flask import Flask, render_template, redirect, url_for, request, flash
+from flask import Flask, render_template, redirect, url_for, request, flash, make_response
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
+from fpdf import FPDF
 from sqlalchemy import func
 from functools import wraps
 from dotenv import load_dotenv
@@ -100,7 +101,7 @@ def role_required(role):
 
 @login_manager.user_loader
 def load_user(user_id):
-    return User.query.get(int(user_id))
+    return db.session.get(User, int(user_id))
 
 # --- Routes ---
 
@@ -332,6 +333,54 @@ def librarian_dashboard():
                            interactions=all_interactions,
                            search_query=search_query, 
                            user_activity=user_activity)
+
+@app.route('/librarian/report/<int:user_id>')
+@login_required
+@role_required('librarian')
+def download_report(user_id):
+    # 1. Fetch User and Activity Data
+    user = User.query.get_or_404(user_id)
+    user_tz = request.cookies.get('timezone', 'UTC')
+    local_tz = pytz.timezone(user_tz)
+    
+    # Get last 14 days of data
+    today = datetime.now(local_tz).date()
+    interactions = ReaderInteraction.query.filter_by(user_id=user.id).all()
+    
+    # 2. Initialize PDF
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("helvetica", 'B', 16)
+    
+    # Header
+    pdf.cell(190, 10, f"Reading Progress Report: {user.username}", new_x="LMARGIN", new_y="NEXT", align='C')
+    pdf.set_font("helvetica", size=10)
+    pdf.cell(190, 10, f"Generated on: {today.strftime('%B %d, %Y')}", new_x="LMARGIN", new_y="NEXT", align='C')
+    pdf.ln(10)
+    
+    # 3. Create the Activity Table
+    pdf.set_font("helvetica", 'B', 12)
+    pdf.cell(40, 10, "Date", border=1)
+    pdf.cell(30, 10, "Status", border=1)
+    pdf.cell(120, 10, "Book Read", border=1, new_x="LMARGIN", new_y="NEXT")
+    
+    pdf.set_font("helvetica", size=10)
+    # Loop back 14 days
+    for i in range(13, -1, -1):
+        d = today - timedelta(days=i)
+        # Find if user read on this day
+        daily_read = next((item for item in interactions if 
+                           pytz.utc.localize(item.timestamp).astimezone(local_tz).date() == d), None)
+        
+        pdf.cell(40, 10, d.strftime('%Y-%m-%d'), border=1)
+        pdf.cell(30, 10, "READ" if daily_read else "MISSED", border=1)
+        pdf.cell(120, 10, daily_read.book.title[:50] if daily_read else "-", border=1, new_x="LMARGIN", new_y="NEXT")
+
+    # 4. Return as File Download
+    response = make_response(bytes(pdf.output()))
+    response.headers['Content-Type'] = 'application/pdf'
+    response.headers['Content-Disposition'] = f'attachment; filename=report_{user.username}.pdf'
+    return response
 
 @app.route('/delete_book/<int:id>')
 @login_required
