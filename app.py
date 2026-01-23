@@ -56,6 +56,10 @@ login_manager.login_message_category = "info"
 
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
+    # Internal name: Set at registration, unique, and never changed.
+    # Used for system logic and stable URLs.
+    internal_username = db.Column(db.String(50), unique=True, nullable=False)
+    # Display name: What everyone sees, can be changed by the user.
     username = db.Column(db.String(80), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=True)
     password = db.Column(db.String(255), nullable=False)
@@ -227,7 +231,8 @@ def reset_with_token(token):
 @role_required('admin')
 def admin_dashboard():
     if request.method == 'POST':
-        username = request.form.get('username')
+        internal_username = request.form.get('username') # Set once here
+        username = internal_username # Set initially, but changeable later
         # SCRAMBLE the password before it ever touches the database
         raw_password = request.form.get('password')
         hashed_password = generate_password_hash(raw_password, method='pbkdf2:sha256')
@@ -248,6 +253,7 @@ def admin_dashboard():
     # If there's a search term, filter by username or email (case-insensitive)
     if search_query:
         query = query.filter(
+            (User.internal_username.ilike(f'%{search_query}%')) | 
             (User.username.ilike(f'%{search_query}%')) | 
             (User.email.ilike(f'%{search_query}%'))
         )
@@ -303,7 +309,7 @@ def librarian_dashboard():
     user_activity = []
     
     if search_query:
-        target_user = User.query.filter(User.username.ilike(f'%{search_query}%')).first()
+        target_user = User.query.filter((User.internal_username.ilike(f'%{search_query}%')) | (User.username.ilike(f'%{search_query}%'))).first()
         if target_user:
             user_read_dates = {
                 pytz.utc.localize(i.timestamp).astimezone(local_tz).date() 
@@ -320,6 +326,7 @@ def librarian_dashboard():
     # 4. Apply Case-Insensitive Search
     if search_query:
         interactions_query = interactions_query.filter(
+            (User.internal_username.ilike(f'%{search_query}%')) |
             (User.username.ilike(f'%{search_query}%')) |
             (Book.title.ilike(f'%{search_query}%')) |
             (Book.author.ilike(f'%{search_query}%'))

@@ -65,6 +65,7 @@
                             <thead class="table-light">
                                 <tr>
                                     <th class="ps-4">ID</th>
+                                    <th>Name</th>
                                     <th>Username</th>
                                     <th>Email Address</th>
                                     <th>Role</th>
@@ -75,6 +76,9 @@
                                 {% for user in users %}
                                 <tr>
                                     <td class="ps-4 text-muted small">#{{ user.id }}</td>
+                                    <td>
+                                        <span class="fw-bold text-dark">{{ user.internal_username }}</span>
+                                    </td>
                                     <td>
                                         <span class="fw-bold text-dark">{{ user.username }}</span>
                                     </td>
