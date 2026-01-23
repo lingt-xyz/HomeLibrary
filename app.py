@@ -291,6 +291,28 @@ def librarian_dashboard():
     # 3. Base Queries
     books = Book.query.all()
     
+    user_tz_name = request.cookies.get('timezone', 'UTC')
+    local_tz = pytz.timezone(user_tz_name)
+    today_local = datetime.now(local_tz).date()
+
+    # Determine display count based on APP_START_DATE
+    days_since_start = (today_local - APP_START_DATE).days + 1
+    display_count = min(days_since_start, 14)
+
+    user_activity = []
+    
+    if search_query:
+        target_user = User.query.filter(User.username.ilike(f'%{search_query}%')).first()
+        if target_user:
+            user_read_dates = {
+                pytz.utc.localize(i.timestamp).astimezone(local_tz).date() 
+                for i in ReaderInteraction.query.filter_by(user_id=target_user.id).all()
+            }
+            
+            for i in range(display_count - 1, -1, -1):
+                d = today_local - timedelta(days=i)
+                user_activity.append({'date': d, 'is_read': d in user_read_dates, 'is_today': d == today_local})
+
     # We start with the ReaderInteraction query but JOIN User and Book
     interactions_query = ReaderInteraction.query.join(User).join(Book)
 
@@ -308,7 +330,8 @@ def librarian_dashboard():
     return render_template('librarian.html', 
                            books=books, 
                            interactions=all_interactions,
-                           search_query=search_query)
+                           search_query=search_query, 
+                           user_activity=user_activity)
 
 @app.route('/delete_book/<int:id>')
 @login_required
