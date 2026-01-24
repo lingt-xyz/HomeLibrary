@@ -46,6 +46,9 @@ app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key-123')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 # Set remember me cookie to expire after 30 days
 app.config['REMEMBER_COOKIE_DURATION'] = timedelta(days=30)
+# Set the session lifetime (e.g., 30 minutes)
+# app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=30)
+# app.config['SESSION_REFRESH_EACH_REQUEST'] = True
 
 db = SQLAlchemy(app)
 login_manager = LoginManager(app)
@@ -134,6 +137,8 @@ def login():
                 # SUCCESS: Reset attempts and lockout
                 user.failed_login_attempts = 0
                 user.lockout_until = None
+                # This triggers the PERMANENT_SESSION_LIFETIME setting
+                # session.permanent = True
                 db.session.commit()
                 login_user(user, remember=remember_me)
                 if user.role == 'admin': return redirect(url_for('admin_dashboard'))
