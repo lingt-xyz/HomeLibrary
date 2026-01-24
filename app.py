@@ -424,6 +424,30 @@ def delete_comment(interaction_id):
 
     return redirect(url_for('librarian_dashboard'))
 
+@app.route('/librarian/matrix')
+@login_required
+@role_required('librarian')
+def reading_matrix():
+    # 1. Fetch all books and all readers (excluding librarians)
+    all_books = Book.query.order_by(Book.title).all()
+    all_readers = User.query.filter_by(role='reader').order_by(User.username).all()
+
+    # 2. Fetch all interactions to build the "Who read what" map
+    interactions = ReaderInteraction.query.all()
+    
+    # Create a mapping: {book_id: {set_of_user_ids}}
+    # Using a set allows for O(1) lookup in the template
+    reading_map = {}
+    for inter in interactions:
+        if inter.book_id not in reading_map:
+            reading_map[inter.book_id] = set()
+        reading_map[inter.book_id].add(inter.user_id)
+
+    return render_template('librarian_matrix.html', 
+                           books=all_books, 
+                           readers=all_readers, 
+                           reading_map=reading_map)
+
 APP_START_DATE = date(2026, 1, 21)
 
 @app.route('/reader', methods=['GET', 'POST'])
