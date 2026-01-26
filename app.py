@@ -15,6 +15,8 @@ from flask_mail import Mail, Message
 # Important for Vercel: Set instance_path to /tmp to avoid the Read-only error
 app = Flask(__name__, instance_path='/tmp')
 
+APP_START_DATE = date(2026, 1, 22)
+
 # Load variables from .env into the system environment
 load_dotenv()
 
@@ -447,8 +449,6 @@ def reading_matrix():
                            books=all_books, 
                            readers=all_readers, 
                            reading_map=reading_map)
-
-APP_START_DATE = date(2026, 1, 21)
 
 @app.route('/reader', methods=['GET', 'POST'])
 @login_required
