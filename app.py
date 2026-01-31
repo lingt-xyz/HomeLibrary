@@ -224,10 +224,7 @@ def reset_with_token(token):
             user.token_expiry = None
 
             user_tz_name = request.cookies.get('timezone', 'UTC')
-            local_tz = pytz.timezone(user_tz_name)
-            today_local = datetime.now(local_tz)
-            user.password_last_changed = today_local
-            current_user.password_last_changed = today_local
+            user.password_last_changed = datetime.now(pytz.timezone(user_tz_name))
 
             db.session.commit()
             flash("Your password has been reset!", "success")
@@ -622,6 +619,9 @@ def profile():
         if new_password:
             if new_password == confirm_password and len(new_password) >= 8:
                 current_user.password = generate_password_hash(new_password, method='pbkdf2:sha256')
+                user_tz_name = request.cookies.get('timezone', 'UTC')
+                current_user.password_last_changed = datetime.now(pytz.timezone(user_tz_name))
+
                 flash("Profile and password updated successfully!", "success")
             else:
                 flash("New passwords must match and be at least 8 characters.", "warning")
