@@ -574,14 +574,20 @@ def add_comment(book_id):
             comment=comment
         )
         db.session.add(new_interaction)
+        db.session.flush() # Push to DB to get accurate count without committing yet
 
         new_count = ReaderInteraction.query.filter_by(user_id=current_user.id).count()
-        if new_count == 1:
-            flash("Congratulations! You've started your reading journey! 🌟", "success")
-        elif new_count == 5:
-            flash("Level Up! You are now an 'Active Reader'! 📚", "success")
-        elif new_count == 20:
-            flash("UNLOCKED: Master Scholar Rank! 🏆", "milestone")
+       
+        # Calculate new stats
+        new_count = ReaderInteraction.query.filter_by(user_id=current_user.id).count()
+        new_stats = get_reading_stats(new_count)
+
+        # Check for a Rank Up!
+        if new_stats['rank'] != old_stats['rank']:
+            if new_count % 100 == 0:
+                flash(f"🎉 LEVEL UP! You are now a {new_stats['rank']}!", "milestone")
+            else:
+                flash(f"🎉 LEVEL UP! You are now a {new_stats['rank']}!", "success")
         else:
             flash("Review submitted successfully!", "success")
 
@@ -624,40 +630,47 @@ def profile():
     return render_template('profile.html')
 
 def get_reader_stats(user_id):
+    RANKS = [
+        {"threshold": 0,   "name": "Novice Reader", "color": "text-secondary"},
+        {"threshold": 10,  "name": "Book Worm",     "color": "text-info"},
+        {"threshold": 25,  "name": "Page Turner",   "color": "text-primary"},
+        {"threshold": 50,  "name": "Library Regular", "color": "text-success"},
+        {"threshold": 100, "name": "Scholar",       "color": "text-warning glow-effect"},
+        {"threshold": 150, "name": "Sage",          "color": "text-danger glow-effect"},
+        {"threshold": 200, "name": "Archivist",     "color": "text-dark glow-effect"},
+        {"threshold": 300, "name": "Master Historian", "color": "text-info glow-effect"},
+        {"threshold": 500, "name": "Living Encyclopedia", "color": "ultra-glow"}
+    ]
+
+    current_rank = RANKS[0]
+    next_rank = None
+
     # Count how many unique books the user has reviewed
     total_read = ReaderInteraction.query.filter_by(user_id=user_id).count()
-    
+
     # Determine Rank
-    if total_read >= 100:
-        rank, color, next_m = "Library Legend", "text-dark", 200
-    elif total_read >= 50:
-        rank, color, next_m = "Grand Librarian", "text-info", 100
-    elif total_read >= 20:
-        rank = "Master Scholar"
-        color = "text-danger"
-        next_milestone = 50
-    elif total_read >= 10:
-        rank = "Bookworm"
-        color = "text-success"
-        next_milestone = 20
-    elif total_read >= 5:
-        rank = "Active Reader"
-        color = "text-primary"
-        next_milestone = 10
+    for i, rank in enumerate(RANKS):
+        if total_read >= rank["threshold"]:
+            current_rank = rank
+            # Check if there is a next rank available
+            if i + 1 < len(RANKS):
+                next_rank = RANKS[i+1]
+            else:
+                next_rank = None # Maximum rank reached
+
+    # Calculate progress percentage to the next level
+    if next_rank:
+        gap = next_rank["threshold"] - current_rank["threshold"]
+        progress = ((total_read - current_rank["threshold"]) / gap) * 100
     else:
-        rank = "Novice"
-        color = "text-secondary"
-        next_milestone = 5
-        
-    # Calculate progress percentage toward the next milestone
-    progress = (total_read / next_milestone) * 100
+        progress = 100 # Max rank attained
     
     return {
         "count": total_read,
-        "rank": rank,
-        "color": color,
-        "progress": min(progress, 100),
-        "next": next_milestone
+        "rank": current_rank["name"],
+        "color": current_rank["color"],
+        "progress": min(progress, 100), # Ensure it doesn't exceed 100%
+        "next": next_rank["name"] if next_rank else "Max Level"
     }
 
 @app.template_filter('to_local')
