@@ -222,8 +222,13 @@ def reset_with_token(token):
             user.password = generate_password_hash(new_password, method='pbkdf2:sha256')
             user.reset_token = None # Clear the token so it can't be used again
             user.token_expiry = None
-            user.password_last_changed = datetime.now(timezone.utc)
-            current_user.password_last_changed = datetime.now(timezone.utc)
+
+            user_tz_name = request.cookies.get('timezone', 'UTC')
+            local_tz = pytz.timezone(user_tz_name)
+            today_local = datetime.now(local_tz)
+            user.password_last_changed = today_local
+            current_user.password_last_changed = today_local
+
             db.session.commit()
             flash("Your password has been reset!", "success")
             return redirect(url_for('login'))
@@ -248,7 +253,7 @@ def admin_dashboard():
         if User.query.filter_by(username=username).first():
             flash("Username already exists!", "danger")
         else:
-            new_user = User(username=username, password=hashed_password, role=role)
+            new_user = User(internal_username=internal_username, username=username, password=hashed_password, role=role)
             db.session.add(new_user)
             db.session.commit()
             flash(f"User {username} created as {role}!", "success")
