@@ -557,6 +557,10 @@ def add_comment(book_id):
         flash(f"Your comment is only {word_count} words. Please write at least 30 words to share a meaningful reflection.", "warning")
         return redirect(url_for('reader_dashboard'))
 
+    # Define old_stats here so it is available to the entire function
+    old_count = ReaderInteraction.query.filter_by(user_id=current_user.id).count()
+    old_stats = get_reader_stats(old_count)
+
     # 1. Search for an existing interaction for this user and this book
     existing_interaction = ReaderInteraction.query.filter_by(
         user_id=current_user.id, 
@@ -582,7 +586,7 @@ def add_comment(book_id):
        
         # Calculate new stats
         new_count = ReaderInteraction.query.filter_by(user_id=current_user.id).count()
-        new_stats = get_reading_stats(new_count)
+        new_stats = get_reader_stats(new_count)
 
         # Check for a Rank Up!
         if new_stats['rank'] != old_stats['rank']:
