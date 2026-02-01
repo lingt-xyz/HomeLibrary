@@ -318,7 +318,7 @@ def librarian_dashboard():
     user_activity = []
     
     if search_query:
-        target_user = User.query.filter((User.internal_username.ilike(f'%{search_query}%')) | (User.username.ilike(f'%{search_query}%'))).first()
+        target_user = User.query.filter(User.internal_username.ilike(search_query) | User.username.ilike(search_query)).first()
         if target_user:
             user_read_dates = {
                 pytz.utc.localize(i.timestamp).astimezone(local_tz).date() 
@@ -334,12 +334,7 @@ def librarian_dashboard():
 
     # 4. Apply Case-Insensitive Search
     if search_query:
-        interactions_query = interactions_query.filter(
-            (User.internal_username.ilike(f'%{search_query}%')) |
-            (User.username.ilike(f'%{search_query}%')) |
-            (Book.title.ilike(f'%{search_query}%')) |
-            (Book.author.ilike(f'%{search_query}%'))
-        )
+        interactions_query = interactions_query.filter(User.internal_username.ilike(search_query) | User.username.ilike(search_query))
 
     # 5. Finalize and Order
     all_interactions = interactions_query.order_by(ReaderInteraction.id.desc()).all()
